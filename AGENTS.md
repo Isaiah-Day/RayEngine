@@ -54,11 +54,13 @@ entries in `Project.toml` in sync with the manifest.
 - `getPos(::Val{:left}, obj)` looks up bounding edge: left/right/up/down for any drawable
 - `Shader` is explicitly **not** implemented; do not implement it
 - Although multiple `Screen`s may exist, the project only supports one currently.
+- `Raylib` exports very few items: generally use `Raylib.X`
 
 ## Known TODOs / unimplemented
 
-- `draw!`, `fill!`, `clear!` in `src/draw.jl` are empty stubs — rendering is
-  not wired to Raylib yet.
+- `draw!(s, d::Rect)` in `src/draw.jl` is wired to Raylib (`DrawRectangle` +
+  optional `DrawRectangleLinesEx` stroke); `fill!` and `clear!` are still
+  stubs — background rendering not wired to Raylib yet.
 - `Keyboard.getproperty` returns `# TODO` — key-down state is not implemented.
   Mouse needs the same treatment, probably with an enum.
 - `Shader` is declared but marked "NOT IMPLEMENTED, DO NOT IMPLEMENT" — leave it.
@@ -77,7 +79,6 @@ using RayEngine
 s = Screen(800, 800)
 debug_loop(s)          # redraw every update seconds (default 0.2)
 stop_debug_loop()      # close the timer
-export(s)              # Raylib exports the screen — not yet wired
 ```
 
 Raylib needs a display; headless CI can't run the engine. Pure logic (bounding boxes, theme, structs) is testable without opening a window.
