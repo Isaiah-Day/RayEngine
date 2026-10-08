@@ -1,0 +1,5 @@
+name = "MyGame"
+uuid = "e44bf1df-0074-498c-9450-ee24b4e09ef9"
+version = "0.1.0"
+
+# [deps] is filled in by dev/setup.jl (MyEngine, Observables, Raylib, Random)

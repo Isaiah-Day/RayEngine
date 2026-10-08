@@ -1,58 +1,69 @@
+"""
+MyEngine: a small ECS game engine for Julia, built on Raylib.jl and Observables.jl.
+
+Two speeds:
+  * hot path  : ECS storages, systems, InputState (plain arrays, no Observables)
+  * reactive  : Params, GameState, Bus, listen! (Observables; low volume, change-driven)
+
+The game package supplies concrete `Params` and `GameState` types. The engine only
+requires that
+
+  state.status :: Observable{Symbol}   # :running | :paused | :stopped
+  state.scene  :: Observable{Symbol}
+
+and, optionally, `params.show_debug :: Observable{Bool}` for the overlay.
+"""
 module RayEngine
 
-const TIMER = Ref{Union{Timer,Nothing}}(nothing)
-
-export bind_keyboard, bind_mouse
-export Screen, Theme, debug_loop, stop_debug_loop, draw!
-export Keyboard, Mouse
-export Vec
-export Style
-export Rect, Circle, Line, getPos
-
-using Raylib
-using ColorTypes
 using Observables
-using Colors
+using Serialization
+import Raylib
 
-
-const Vec = Array{<:Number,1}
-
-include("theme.jl")
+include("ecs.jl")
+include("commands.jl")
 include("input.jl")
-include("drawables.jl")
-include("screen.jl")
-include("draw.jl")
+include("resources.jl")
+include("reactive.jl")
+include("schedule.jl")
+include("engine.jl")
+include("debug/dev.jl")
+include("debug/overlay.jl")
+include("loop.jl")
 
+# ECS
+export Entity,
+    World,
+    spawn!,
+    despawn!,
+    add!,
+    remove!,
+    each,
+    get_component,
+    has_component,
+    is_alive,
+    entities,
+    components,
+    entity_count
+export CommandBuffer, apply!
+# input
+export InputState,
+    key_down,
+    key_pressed,
+    key_released,
+    key_pressed_fixed,
+    button_down,
+    button_pressed,
+    button_released,
+    axis,
+    press!
+# resources
+export Resources, resource, set_resource!, has_resource
+# reactive
+export Bus, channel, emit!, listen!, unlisten!, unlisten_all!
+# schedule + engine
+export @system, SystemRegistry, install!, STAGES, Ctx, Engine, EngineConfig
+export start!, stop!, pause!, resume!, step!, enable!, disable!, systems
+export reset_scene!, load_scene!, goto_scene!
+export inspect, snapshot!, restore!
 
-function _draw_all_drawables(g::Screen)
-    symbols = names(Main; all = true, imported = false)
-    # @info symbols
-    drawables = filter(symbols) do sym
-        str = string(sym)
-        !startswith(str, '#') &&
-            !startswith(str, '@') &&
-            sym !== nameof(@__MODULE__) &&
-            typeof(getglobal(Main, sym)) <: Drawable
-    end
-    clear!(g)
-    for drawable in drawables
-        push!(g, getglobal(Main, drawable))
-    end
-
-    draw!(g)
-
-end
-
-
-function debug_loop(s; update = 0.2)
-    TIMER[] = Timer(update; interval = update) do t
-        _draw_all_drawables(s)
-    end
-end
-
-stop_debug_loop() = (close(TIMER[]); TIMER[] = nothing)
-
-
-
-
-end # module RayEngine
+end # module
