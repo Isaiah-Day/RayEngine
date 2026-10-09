@@ -18,9 +18,9 @@ Schedule() = Schedule(
     collect(Symbol, STAGES),
 )
 
-# ───────────── Declarative registry, owned by the game module ─────────────
-# The game declares `const SYSTEMS = SystemRegistry()` once. Because the registry is
-# owned by the game module, registrations made at top level survive precompilation.
+
+### SYSTEMS REGISTRY
+# The game declares `const SYSTEMS = SystemRegistry()` once.
 
 struct SystemDef
     name::Symbol
@@ -66,6 +66,10 @@ macro system(stage, fdef)
     end
 end
 
+
+"""
+Run after all systems have been added!
+"""
 function install!(sch::Schedule, reg::SystemRegistry)
     for d in reg.defs
         for (st, vec) in sch.stages            # drop copies left in other stages

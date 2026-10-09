@@ -1,7 +1,7 @@
-abstract type Drawable end
+abstract type Object end
 
 
-mutable struct Rect <: Drawable
+mutable struct Rect <: Object
     pos1::Vec
     pos2::Vec
 
@@ -10,23 +10,28 @@ end
 
 
 
-mutable struct Line <: Drawable
+mutable struct Line <: Object
     pos1::Vec
     pos2::Vec
 
+    width::Float32
+
     style::Union{Shader,Style}
+
+    Line(x1, y1, x2, y2, strokewidth) = new([x1, y1], [x2, y2], width, Style())
+    Line(p1, p2, width) = new(p1, p2, width, Style())
+
 end
-Line(x1, y1, x2, y2) = Line([x1, y1], [x2, y2])
 
 
 
-@kwdef mutable struct Circle <: Drawable
+@kwdef mutable struct Circle <: Object
     center::Vec
-    r::Number
+    r::Float32
 
     style::Union{Shader,Style}=Style()
 
-    Circle(center::Vec, r::Number) = new(center, r, Style())
+    Circle(center::Vec, r::Float32) = new(center, r, Style())
 end
 
 

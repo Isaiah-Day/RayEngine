@@ -18,7 +18,15 @@ module RayEngine
 using Observables
 using Serialization
 import Raylib
+using Colors
+using ColorTypes
 
+Vec = Vector{Float32}
+
+
+include("visual/theme.jl")
+include("visual/objects.jl")
+include("visual/draw.jl")
 include("ecs.jl")
 include("commands.jl")
 include("input.jl")
@@ -65,5 +73,5 @@ export @system, SystemRegistry, install!, STAGES, Ctx, Engine, EngineConfig
 export start!, stop!, pause!, resume!, step!, enable!, disable!, systems
 export reset_scene!, load_scene!, goto_scene!
 export inspect, snapshot!, restore!
-
+export Rect, draw
 end # module

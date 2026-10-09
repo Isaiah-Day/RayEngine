@@ -1,6 +1,7 @@
 # Debug overlay: frame time, entity counts, per-system timings, last error.
 # Toggle with params.show_debug[] = true.
 
+
 function overlay_lines(eng::Engine)
     clk, w = eng.clock, eng.world
     lines = String[]
