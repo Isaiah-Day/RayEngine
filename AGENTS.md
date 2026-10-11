@@ -15,7 +15,7 @@ Project.toml        RayEngine package (deps: ColorTypes, Colors, FixedPointNumbe
 Manifest.toml       Resolved manifest
 .gitignore          `.DS_STORE` only
 src/
-  RayEngine.jl      Module entry point; `Vec = Array{<:Number,1}`; includes the files below; exports the public API
+  RayEngine.jl      Module entry point; `Vec = Array{<:Int,1}`; includes the files below; exports the public API
   ecs.jl            Entity, Storage (dense vector + sparse index), World, spawn!/add!/remove!/despawn!, each queries
   commands.jl       CommandBuffer: deferred spawn/despawn/add/remove, applied between stages
   input.jl          InputState: polled once per frame into plain BitVectors and fields

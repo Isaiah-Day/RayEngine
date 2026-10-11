@@ -1,0 +1,23 @@
+create_app("Platformer", "PlatFormerBuild";
+           executable_name = "julia-platformer",
+#           precompile_execution_file = "precompile_game.jl",  # optional but recommended
+           include_lazy_artifacts = true)
+
+
+    # Windowed: GLFW/Raylib on macOS needs window + GL context + event loop on the
+    # *main* thread. The engine's @async `start!` spawns a pooled thread and GLFW
+    # blocks there forever (rainbow spinner, no window). So we loop synchronously on
+    # the calling (REPL) thread instead. The REPL is busy until the window closes.
+    Raylib.InitWindow(Int(p.width), Int(p.height), "Platformer")
+    try
+        last = time_ns()
+        while !Raylib.WindowShouldClose() && eng.state.status[] !== :stopped
+            now = time_ns()
+            dt = clamp((now - last) / 1e9, 0.0, 60)
+            last = now
+            RayEngine.frame!(eng, dt)     # poll + simulate + draw, via engine's own frame!
+        end
+    finally
+        Raylib.CloseWindow()
+    end
+    return eng

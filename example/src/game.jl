@@ -55,8 +55,11 @@ end
 "Read input during the fixed step: horizontal move + jump on an edge (fixed latch)."
 function player_input(eng::RayEngine.Engine{GameParams,GameState}, dt::Float64)
     p      = eng.params
-    joy    = axis(eng.input, Raylib.KEY_LEFT, Raylib.KEY_RIGHT)  # -1/0/+1
-    jumping = key_pressed_fixed(eng.input, Raylib.KEY_SPACE)
+    joy    = axis(eng.input, Raylib.KEY_LEFT, Raylib.KEY_RIGHT)
+    joy   += axis(eng.input, Raylib.KEY_A, Raylib.KEY_D)      # WASD alias
+    joy     = clamp(joy, -1, 1)
+    jumping = key_pressed_fixed(eng.input, Raylib.KEY_SPACE) ||
+              key_pressed_fixed(eng.input, Raylib.KEY_W)
 
     each(eng.world, PlayerBody) do e, pb
         pb.vel[1] = joy * p.move_speed
@@ -88,22 +91,26 @@ end
 
 function resolve_axis!(eng, pb::PlayerBody, axis_i::Int)
     each(eng.world, Platform) do _, pl
-        (pl.solid && overlaps(pb, pl)) || return
-        if axis_i == 1
-            if pb.vel[1] > 0
-                pb.pos[1] = pl.pos[1] - pb.size[1]
-            elseif pb.vel[1] < 0
-                pb.pos[1] = pl.pos[1] + pl.size[1]
-            end
-            pb.vel[1] = 0
-        else
-            if pb.vel[2] >= 0            # moving down: land on top
-                pb.pos[2] = pl.pos[2] - pb.size[2]
-                pb.on_ground = true
+        # `continue`/`return` are illegal here: the do-block is a closure, not
+        # a lexically-enclosing loop. Use an if. (A stray `return` here exits
+        # resolve_axis! early and breaks every other platform's collision.)
+        if pl.solid && overlaps(pb, pl)
+            if axis_i == 1
+                if pb.vel[1] > 0
+                    pb.pos[1] = pl.pos[1] - pb.size[1]
+                elseif pb.vel[1] < 0
+                    pb.pos[1] = pl.pos[1] + pl.size[1]
+                end
+                pb.vel[1] = 0
             else
-                pb.pos[2] = pl.pos[2] + pl.size[2]
+                if pb.vel[2] >= 0            # moving down: land on top
+                    pb.pos[2] = pl.pos[2] - pb.size[2]
+                    pb.on_ground = true
+                else
+                    pb.pos[2] = pl.pos[2] + pl.size[2]
+                end
+                pb.vel[2] = 0
             end
-            pb.vel[2] = 0
         end
     end
     return nothing
@@ -239,13 +246,14 @@ function run!(; headless::Bool = false, frames::Int = 1)
     eng.state.scene[] = :game
     reset_scene!(eng)                 # runs load_scene!(Val(:game))
 
+    eng.state.status[] = :running     # Δ default is :stopped; the gate below checks != :stopped
+
     if headless
         for _ in 1:frames
             simulate!(eng, 1 / 60)
         end
         return eng
     end
-    s.status[] = :running
-    start!(eng)
+    RayEngine.start!(eng)
     return eng
 end

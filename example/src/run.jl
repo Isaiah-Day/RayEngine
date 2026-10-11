@@ -1,5 +1,6 @@
-using Platformer
+using Platfomer
 
-# Opens a window; jump with Space, move with Left/Right arrows.
-# Esc closes (Raylib default). `stop!(eng)` from the REPL also ends it.
-eng = Platformer.run!()
+function (@main)(ARGS)    # Julia 1.11+ alternative, see below
+    Platformer.run!()
+    return 0
+end

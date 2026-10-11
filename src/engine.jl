@@ -229,17 +229,16 @@ function simulate!(eng::Engine, dt::Float64)
 end
 
 function render!(eng::Engine, dt::Float64)
-    Raylib.BeginDrawing()
+    # `frame!` owns the drawing frame (BeginDrawing/EndDrawing); render! only runs
+    # systems so it stays headless-safe.
     run_systems!(eng, eng.functions[:render], dt)
     run_systems!(eng, eng.functions[:overlay], dt)
     if debug_enabled(eng.params)
         try
             draw_overlay!(eng)
-            Raylib.EndDrawing()
         catch err
             eng.params.show_debug[] = false      # don't spam the same failure every frame
             record_error!(eng, :overlay, err, catch_backtrace())
-            Raylib.EndDrawing()
         end
     end
     return nothing
