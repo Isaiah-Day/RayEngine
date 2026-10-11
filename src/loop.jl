@@ -1,5 +1,5 @@
 # Windowed frame + the async loop that keeps the REPL alive.
-
+ 
 "One windowed frame: poll input, simulate, draw. `render!` runs between Begin/EndDrawing."
 function frame!(eng::Engine, dt::Float64)
     poll_input!(eng.input)
@@ -21,7 +21,7 @@ function run_loop(eng::Engine)
         # blocks the whole Julia thread inside EndDrawing, which starves the REPL.
         frame_ns = cfg.fps > 0 ? round(Int, 1e9 / cfg.fps) : 0
         last = time_ns()
-        while !Raylib.WindowShouldClose() && eng.state.status[] !== :stopped
+        while !Raylib.WindowShouldClose()
             t0 = time_ns()
             dt = (t0 - last) / 1e9
             last = t0
@@ -37,6 +37,9 @@ function run_loop(eng::Engine)
             end
             sleep(max(0.001, (frame_ns - (time_ns() - t0)) / 1e9))   # always yields to the REPL
         end
+        Raylib.CloseWindow()
+        eng.state.status[] = :stopped
+        eng.dev.task = nothing
     finally
         Raylib.CloseWindow()
         eng.state.status[] = :stopped
@@ -65,5 +68,8 @@ function stop!(eng::Engine; listeners::Bool = true)
         end
     end
     listeners && unlisten_all!(eng)
+    if !Raylib.WindowShouldClose()
+        Raylib.CloseWindow()
+    end
     return eng
 end

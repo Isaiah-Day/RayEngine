@@ -1,26 +1,24 @@
-# Debug overlay: frame time, entity counts, per-system timings, last error.
+# Debug overlay: frame time, entity counts, system list (with disabled flag), last error.
 # Toggle with params.show_debug[] = true.
 
 
 function overlay_lines(eng::Engine)
     clk, w = eng.clock, eng.world
     lines = String[]
-    fps = round(1000 / max(clk.frame_ms, 1e-3); digits = 0)
+    fps = round(Int, 1000 / max(clk.frame_ms, 1e-3))
     push!(
         lines,
         "frame $(clk.frame) | $(round(clk.frame_ms; digits=1)) ms ($(fps) fps) | $(eng.state.status[])",
     )
     counts = join(("$(nameof(T))=$(length(s))" for (T, s) in w.storages), " ")
     push!(lines, "entities: $(w.n_alive) | $counts")
-    for st in eng.schedule.order, s in eng.schedule.stages[st]
+    for (st, fs) in stage_systems(eng), f in fs
         push!(
             lines,
             "  " *
-            rpad(st, 13) *
-            rpad(s.name, 22) *
-            lpad(round(s.last_ns / 1e3; digits = 1), 8) *
-            " us" *
-            (s.enabled ? "" : "  [DISABLED]"),
+            rpad(string(st), 13) *
+            rpad(string(nameof(f)), 22) *
+            (f in eng.disabled ? "[DISABLED]" : ""),
         )
     end
     ce = eng.dev.last_error[]

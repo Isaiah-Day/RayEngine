@@ -42,30 +42,38 @@ function step!(eng::Engine, n::Int = 1)
     return eng
 end
 
+# ───────────── Systems ─────────────
+# Stages are re-read on every call, so these listings always match the current stage tuples.
+
+const STAGE_ORDER = (:input, :fixed_update, :update, :render, :overlay)
+
+"`(stage, systems)` pairs in run order."
+stage_systems(eng::Engine) =
+    [(st, Base.invokelatest(eng.functions[st])) for st in STAGE_ORDER]
+
 function _find_system(eng::Engine, name::Symbol)
-    for vec in values(eng.schedule.stages), s in vec
-        s.name === name && return s
+    for (_, fs) in stage_systems(eng), f in fs
+        nameof(f) === name && return f
     end
     error("no system named :$name")
 end
 
-"Re-enable a system that fault isolation (or you) switched off."
-function enable!(eng::Engine, name::Symbol)
-    _find_system(eng, name).enabled = true
-    eng.dev.last_error[] = nothing
-    return eng
-end
-disable!(eng::Engine, name::Symbol) = (_find_system(eng, name).enabled = false; eng)
+"Re-enable a system by name (or pass the function object to `enable!`)."
+enable!(eng::Engine, name::Symbol) = (enable!(eng, _find_system(eng, name)); eng)
 
-function systems(eng::Engine)
-    for st in eng.schedule.order, s in eng.schedule.stages[st]
+"Switch a system off by function object or name; it stays off until `enable!`."
+disable!(eng::Engine, f::Function) = (push!(eng.disabled, f); eng)
+disable!(eng::Engine, name::Symbol) = disable!(eng, _find_system(eng, name))
+
+"Print every system in run order with its stage and on/OFF state."
+systems(eng::Engine) = systems(stdout, eng)
+function systems(io::IO, eng::Engine)
+    for (st, fs) in stage_systems(eng), f in fs
         println(
-            rpad(st, 13),
-            rpad(s.name, 24),
-            s.enabled ? "on " : "OFF",
-            "  ",
-            round(s.last_ns / 1e3; digits = 1),
-            " µs",
+            io,
+            rpad(string(st), 13),
+            rpad(string(nameof(f)), 24),
+            f in eng.disabled ? "OFF" : "on ",
         )
     end
     return nothing

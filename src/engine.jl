@@ -22,7 +22,6 @@ mutable struct DevState                  # only the REPL and tooling touch this
     pending_steps::Int
     pending_scene::Union{Nothing,Symbol}
     task::Union{Task,Nothing}
-    scratch::Dict{Symbol,Any}
 end
 DevState() = DevState(
     Dict{Symbol,Observables.ObserverFunction}(),
@@ -30,7 +29,6 @@ DevState() = DevState(
     0,
     nothing,
     nothing,
-    Dict{Symbol,Any}(),
 )
 
 
@@ -42,7 +40,8 @@ struct Engine{P,S}
     config::EngineConfig
     world::World
     commands::CommandBuffer
-    schedule::Schedule
+    functions::Dict{Symbol, Any}   # stage name => stage function (or Vector of systems, legacy)
+    disabled::Set{Function}
     input::InputState
     resources::Resources
     params::P
@@ -52,12 +51,14 @@ struct Engine{P,S}
     dev::DevState
 end
 
-Engine(params::P, state::S; config::EngineConfig = EngineConfig()) where {P,S} =
+
+Engine(params::P, state::S; config::EngineConfig = EngineConfig(), fixed_update=[], input=[], update=[], render=[], overlay=[]) where {P,S} =
     Engine{P,S}(
         config,
         World(),
         CommandBuffer(),
-        Schedule(),
+        Dict(:fixed_update=>fixed_update, :input => input, :update => update, :render => render, :overlay => overlay),
+        Set{Function}(),
         InputState(),
         Resources(),
         params,
@@ -67,19 +68,27 @@ Engine(params::P, state::S; config::EngineConfig = EngineConfig()) where {P,S} =
         DevState(),
     )
 
-
-function Base.show(io::IO, eng::Engine)
-    print(
-        io,
-        "Engine(",
-        eng.state.status[],
-        ", frame=",
-        eng.clock.frame,
-        ", entities=",
-        eng.world.n_alive,
-        ")",
-    )
+struct P end
+struct S
+    status::Observable{Symbol}
 end
+function Engine(;config::EngineConfig = EngineConfig(), fixed_update=[], input=[], update=[], render=[], overlay=[])
+
+        Engine(P,S(Observable(:stopped)); config=config, fixed_update=fixed_update, input=input, update=update, render=render, overlay=overlay)
+end
+
+# function Base.show(io::IO, eng::Engine)
+#     print(
+#         io,
+#         "Engine(",
+#         eng.state.status[],
+#         ", frame=",
+#         eng.clock.frame,
+#         ", entities=",
+#         eng.world.n_alive,
+#         ")",
+#     )
+# end
 
 # Per-frame context
 
@@ -119,7 +128,6 @@ end
 
 resource(ctx::Ctx, ::Type{T}) where {T} = resource(ctx.resources, T)
 
-install!(eng::Engine, reg::SystemRegistry) = (install!(eng.schedule, reg); eng)
 
 
 
@@ -140,27 +148,30 @@ end
 
 # Running stages
 
-function run_stage!(eng::Engine, stage::Symbol, dt::Float64)
+# A stage is a zero-arg function returning a tuple of systems, e.g. () -> (move!, collide!).
+# Legacy `Vector{Any}` stages (constructor defaults) are accepted too.
+_stage_systems(stage::Function) = Base.invokelatest(stage)
+_stage_systems(stage) = stage
+
+function run_systems!(eng, stage, dt::Float64)
     ctx = Ctx(eng, dt)
-    for s in eng.schedule.stages[stage]
-        s.enabled || continue
-        if s.run_if !== nothing && !s.run_if(ctx)
-            continue
-        end
-        t0 = time_ns()
+    for f in _stage_systems(stage)
+        f in eng.disabled && continue
         try
-            s.f(eng.world, ctx)
+            Base.invokelatest(f, eng, ctx.dt)
         catch err
-            s.enabled = false
-            record_error!(eng, s.name, err, catch_backtrace())
+            push!(eng.disabled, f)           # Set{Function}
+            record_error!(eng, nameof(f), err, catch_backtrace())
         end
-        s.last_ns = time_ns() - t0
     end
     return nothing
 end
 
+enable!(eng, f) = (delete!(eng.disabled, f); eng.dev.last_error[] = nothing)
+
+
 function run_fixed_step!(eng::Engine)
-    run_stage!(eng, :fixed_update, eng.config.fixed_dt)
+    run_systems!(eng, eng.functions[:fixed_update], eng.config.fixed_dt)
     apply!(eng.commands, eng.world)
     fill!(eng.input.fixed_pressed, false)    # edges are consumed by exactly one fixed step
     return nothing
@@ -186,7 +197,7 @@ function simulate!(eng::Engine, dt::Float64)
     paused = eng.state.status[] === :paused
     stepping = paused && dev.pending_steps > 0
 
-    run_stage!(eng, :input, dt)              # always runs, so hotkeys can unpause
+    run_systems!(eng, eng.functions[:input], dt)              # always runs, so hotkeys can unpause
 
     if stepping
         run_fixed_step!(eng)                 # exactly one fixed step per stepped frame
@@ -207,8 +218,7 @@ function simulate!(eng::Engine, dt::Float64)
 
     if !paused || stepping
         udt = stepping ? cfg.fixed_dt : dt
-        run_stage!(eng, :update, udt)
-        run_stage!(eng, :late_update, udt)
+        run_systems!(eng, eng.functions[:update], udt)
         apply!(eng.commands, eng.world)
         clk.elapsed += udt
     end
@@ -219,14 +229,17 @@ function simulate!(eng::Engine, dt::Float64)
 end
 
 function render!(eng::Engine, dt::Float64)
-    run_stage!(eng, :render, dt)
-    run_stage!(eng, :overlay, dt)
+    Raylib.BeginDrawing()
+    run_systems!(eng, eng.functions[:render], dt)
+    run_systems!(eng, eng.functions[:overlay], dt)
     if debug_enabled(eng.params)
         try
             draw_overlay!(eng)
+            Raylib.EndDrawing()
         catch err
             eng.params.show_debug[] = false      # don't spam the same failure every frame
             record_error!(eng, :overlay, err, catch_backtrace())
+            Raylib.EndDrawing()
         end
     end
     return nothing

@@ -21,7 +21,7 @@ import Raylib
 using Colors
 using ColorTypes
 
-Vec = Vector{Float32}
+Vec = Array{Int, 1}
 
 
 include("visual/theme.jl")
@@ -32,7 +32,6 @@ include("commands.jl")
 include("input.jl")
 include("resources.jl")
 include("reactive.jl")
-include("schedule.jl")
 include("engine.jl")
 include("debug/dev.jl")
 include("debug/overlay.jl")
@@ -68,10 +67,12 @@ export InputState,
 export Resources, resource, set_resource!, has_resource
 # reactive
 export Bus, channel, emit!, listen!, unlisten!, unlisten_all!
-# schedule + engine
-export @system, SystemRegistry, install!, STAGES, Ctx, Engine, EngineConfig
+export Ctx, Engine, EngineConfig
+# engine loop
+export simulate!, render!, frame!
+export start!, stop!, pause!, resume!, step!, enable!, disable!, systems
 export start!, stop!, pause!, resume!, step!, enable!, disable!, systems
 export reset_scene!, load_scene!, goto_scene!
 export inspect, snapshot!, restore!
-export Rect, draw
+export Rect, Circle, Line, Style, Theme, draw, getPos
 end # module
