@@ -46,3 +46,9 @@ function draw(d::Line)
         @warn "Line.style.stroke is not `nothing`. Ignoring: `Line` cannot have stroke."
     end
 end
+
+
+function draw(d::Text)
+    fill = Raylib.Fade(convert(RGBA{N0f8}, d.style.color), d.style.alpha)
+    Raylib.DrawText(d.text, d.pos[1], d.pos[2], d.size, fill)
+end

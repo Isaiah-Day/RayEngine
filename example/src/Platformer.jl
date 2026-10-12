@@ -12,6 +12,8 @@ using Observables
 
 export GameParams, GameState, run!
 
+include("setup.jl")
+include("systems.jl")
 include("game.jl")
 
 end # module

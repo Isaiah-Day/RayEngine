@@ -37,6 +37,16 @@ end
 end
 
 
+@kwdef mutable struct Text <: Object
+    text::String
+    pos::Vec
+    size::Int
+
+    style::Union{Shader, Style}=Style()
+
+    Text(text::String, pos::Vec, size::Int) = new(text, pos, size, Style())
+end
+
 
 getPos(::Val{:left}, r::Rect) = min(r.pos1[1], r.pos2[1])
 getPos(::Val{:right}, r::Rect) = max(r.pos1[1], r.pos2[1])

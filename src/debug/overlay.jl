@@ -32,7 +32,7 @@ end
 function draw_overlay!(eng::Engine)
     lines = overlay_lines(eng)
     h = 16 * length(lines) + 10
-    Raylib.DrawRectangle(5, 5, 640, h, Raylib.Color(0, 0, 0, 170))
+    Raylib.DrawRectangle(5, 5, 640, h, RGB(0, 0, 170/255))
     for (i, l) in enumerate(lines)
         Raylib.DrawText(l, 10, 10 + 16 * (i - 1), 14, Raylib.RAYWHITE)
     end
