@@ -15,5 +15,6 @@ export GameParams, GameState, run!
 include("setup.jl")
 include("systems.jl")
 include("game.jl")
+include("run.jl")
 
 end # module

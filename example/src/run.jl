@@ -1,6 +1,9 @@
-using Platformer
-
-function (@main)(ARGS)    # Julia 1.11+ alternative, see below
-    Platformer.run!()
+Base.@ccallable function julia_main()::Cint
+    try
+        run!()
+    catch
+        Base.invokelatest(Base.display_error, Base.catch_stack())
+        return 1
+    end
     return 0
 end
