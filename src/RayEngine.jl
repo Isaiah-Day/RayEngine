@@ -74,5 +74,5 @@ export start!, stop!, pause!, resume!, step!, enable!, disable!, systems
 export start!, stop!, pause!, resume!, step!, enable!, disable!, systems
 export reset_scene!, load_scene!, goto_scene!
 export inspect, snapshot!, restore!
-export Rect, Circle, Line, Style, Theme, draw, getPos
+export Rect, Circle, Ellipse, Triangle, Pixel, Line, BezierSpline, LinearSpline, Style, Theme, draw, getPos
 end # module

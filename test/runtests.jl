@@ -512,26 +512,66 @@ end
 end
 
 @testset "Visual shapes (headless)" begin
-    r = Rect([0.0, 0.0], [10.0, 4.0])
+    r = Rect([0, 0], [10, 4])
     @test getPos(Val(:left), r) == 0.0
     @test getPos(Val(:right), r) == 10.0
 
-    c = Circle([5.0, 5.0], 2.0f0)
+    c = Circle([5, 5], 2.0)
     @test getPos(Val(:left), c) == 3.0
     @test getPos(Val(:right), c) == 7.0
     @test getPos(Val(:down), c) == 3.0
     @test getPos(Val(:up), c) == 7.0
 
-    l = Line(0.0, 0.0, 10.0, 5.0, 2.0f0)
-    @test l.width == 2.0f0
+    l = Line(0, 0, 10, 5, 2.0)
+    @test l.width == 2.0
     @test getPos(Val(:left), l) == 0.0
     @test getPos(Val(:right), l) == 10.0
     @test getPos(Val(:down), l) == 0.0
     @test getPos(Val(:up), l) == 5.0
 
-    l2 = Line([1.0, 2.0], [3.0, -4.0], 1.0f0)
+    l2 = Line([1, 2], [3, -4], 1.0 )
     @test getPos(Val(:right), l2) == 3.0
     @test getPos(Val(:down), l2) == -4.0
+
+    p = Pixel([3, 4])
+    @test getPos(Val(:left), p) == 3.0
+    @test getPos(Val(:right), p) == 3.0
+    @test getPos(Val(:down), p) == 4.0
+    @test getPos(Val(:up), p) == 4.0
+    @test Pixel(1, 2).pos == [1, 2]
+
+    s = LinearSpline([[0, 0], [10, 5], [4, 8]])
+    @test s.width == 1.0
+    @test getPos(Val(:left), s) == 0.0
+    @test getPos(Val(:right), s) == 10.0
+    @test getPos(Val(:down), s) == 0.0
+    @test getPos(Val(:up), s) == 8.0
+
+    b = BezierSpline([0, 0], [10, 5], 2.0)
+    @test b.width == 2.0
+    @test getPos(Val(:left), b) == 0.0
+    @test getPos(Val(:right), b) == 10.0
+    @test getPos(Val(:down), b) == 0.0
+    @test getPos(Val(:up), b) == 5.0
+
+    e = Ellipse([5, 5], 3.0, 2.0)
+    @test getPos(Val(:left), e) == 2.0
+    @test getPos(Val(:right), e) == 8.0
+    @test getPos(Val(:down), e) == 3.0
+    @test getPos(Val(:up), e) == 7.0
+
+    t = Triangle([0, 0], [10, 0], [5, 8])
+    @test getPos(Val(:left), t) == 0.0
+    @test getPos(Val(:right), t) == 10.0
+    @test getPos(Val(:down), t) == 0.0
+    @test getPos(Val(:up), t) == 8.0
+
+    # draw methods exist; they need a live window, so don't call them headless
+    @test hasmethod(draw, Tuple{Pixel})
+    @test hasmethod(draw, Tuple{LinearSpline})
+    @test hasmethod(draw, Tuple{BezierSpline})
+    @test hasmethod(draw, Tuple{Ellipse})
+    @test hasmethod(draw, Tuple{Triangle})
 
     @test Style() isa Style
     @test Theme() isa Theme

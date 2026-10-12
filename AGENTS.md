@@ -5,7 +5,7 @@ engine is the module `RayEngine` in `src/`. Game code is supposed to live in a s
 package; `example/` is a sample game that is currently **out of sync with the engine** and
 does not load (see Known issues).
 
-> Note: engine recovered from the stage refactor; test suite is **green** (149 assertions, `Pkg.test()`).
+> Note: engine recovered from the stage refactor; test suite is **green** (177 assertions, `Pkg.test()`).
 > See Known issues for the remaining gaps.
 
 ## Project layout
@@ -15,7 +15,7 @@ Project.toml        RayEngine package (deps: ColorTypes, Colors, FixedPointNumbe
 Manifest.toml       Resolved manifest
 .gitignore          `.DS_STORE` only
 src/
-  RayEngine.jl      Module entry point; `Vec = Array{<:Int,1}`; includes the files below; exports the public API
+  RayEngine.jl      Module entry point; `Vec = Array{Int,1}`; includes the files below; exports the public API
   ecs.jl            Entity, Storage (dense vector + sparse index), World, spawn!/add!/remove!/despawn!, each queries
   commands.jl       CommandBuffer: deferred spawn/despawn/add/remove, applied between stages
   input.jl          InputState: polled once per frame into plain BitVectors and fields
@@ -25,9 +25,10 @@ src/
   loop.jl           frame!, run_loop, start!/stop! (async loop on @async)
   debug/dev.jl      listen!/unlisten!/unlisten_all!, pause!/resume!/step!, enable!/disable!, systems, inspect, snapshot!/restore!
   debug/overlay.jl  Debug HUD: overlay_lines, draw_overlay! (toggled by params.show_debug)
-  visual/           Drawables Rect, Circle, Line + draw(); Style/Theme; Shader placeholder
-                  (see Known issues)
-test/runtests.jl    Headless suite — GREEN (149 assertions). Covers ECS, CommandBuffer, Resources,
+  visual/           Drawables Rect, Circle, Line, Pixel, LinearSpline, BezierSpline,
+                    Ellipse, Triangle + draw(); Style/Theme; Shader placeholder
+                    (see Known issues)
+test/runtests.jl    Headless suite — GREEN (177 assertions). Covers ECS, CommandBuffer, Resources,
                     InputState, Bus/listen!, Engine (simulate!, pause/step, fixed-input latch,
                     fault isolation, commands-between-stages, render! headless, default ctor),
                     scenes/resets, snapshots, visual shapes. Fixtures: TPos/TVel/TTag,
@@ -35,8 +36,7 @@ test/runtests.jl    Headless suite — GREEN (149 assertions). Covers ECS, Comma
 example/            Sample game package MyGame — stale, no longer loadable (old API)
 ```
 
-`README.md` and the previous `AGENTS.md` were deleted from the working tree
-(`git status` shows both as `D`); this file replaces them.
+
 
 ## Running Julia: use julia-mcp
 
@@ -71,7 +71,7 @@ Use the `mcp__julia_mcp` namespace proxy: `mcp__julia_mcp({ tool: "julia_eval", 
 ```julia
 using RayEngine            # loads Raylib too, but opens no window
 
-using Pkg; Pkg.test()      # full suite — green (149 assertions)
+using Pkg; Pkg.test()      # full suite — green (177 assertions)
 
 eng = Engine(TParams(), TState();   # headless engine; fixtures in test/runtests.jl
              config = EngineConfig(fixed_dt = 1/60),
@@ -168,8 +168,14 @@ includes it in `snapshot!`. Resources survive `reset_scene!`.
 ### Visual drawing
 `src/visual/` is a small 2D shaping layer over Raylib, included by `RayEngine.jl`
 (`theme.jl` → `objects.jl` → `draw.jl`).
-- Drawables: `Rect(pos1, pos2)`, `Circle(center, r)`, `Line(x1,y1,x2,y2,w)` / `Line(p1,p2,w)`;
+- Drawables: `Rect(pos1, pos2)`, `Circle(center, r)`, `Line(x1,y1,x2,y2,w)` / `Line(p1,p2,w)`,
+  `Pixel(x, y)`, `LinearSpline([[x,y], ...], width=1.0)`, `BezierSpline(p1, p2, w)`,
+  `Ellipse(center, radius_h, radius_v)`, `Triangle(v1, v2, v3)` (6-coordinate forms too);
   `getPos(::Val{:left/:right/:down/:up}, obj)` gives a bounding edge.
+- `LinearSpline` draws segment-by-segment with `DrawLineEx` (raylib's `DrawLineStrip` wrapper
+  takes `Ref{<:StaticArray}`, so a `Vector{RayVector2}` won't dispatch). `Pixel`, `LinearSpline`
+  and `BezierSpline` have no raylib outline variant; a non-`nothing` `stroke` is ignored with
+  a `@warn` (same as `Line`). `Ellipse` and `Triangle` stroke via `DrawEllipseLines`/`DrawTriangleLines`.
 - `Style`/`Theme` hold a Colors.jl `Color`, `alpha`, optional `stroke`/`strokewidth`.
 - `draw(obj)` emits the Raylib draw calls and needs an active window (not callable headless).
 - The types are exported but not wired into a dedicated stage; games call `draw` from a
