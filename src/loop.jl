@@ -4,7 +4,10 @@ function frame!(eng::Engine, dt::Float64)
     simulate!(eng, dt)
     Raylib.BeginDrawing()
     try
-        render!(eng, dt)             # a :render system should clear the background first
+        # Always clear: the GL back buffer is undefined after a swap, so without this
+        # an engine with no :render systems flickers between garbage buffers.
+        Raylib.ClearBackground(eng.config.background)
+        render!(eng, dt)             # render systems may clear again with their own color
     finally
         Raylib.EndDrawing()          # never leave a drawing frame open
     end

@@ -6,6 +6,7 @@ Base.@kwdef struct EngineConfig
     max_fixed_steps::Int = 5             # catch-up cap per frame
     max_frame_dt::Float64 = 0.25         # clamp for long stalls (breakpoints, REPL pauses)
     fps::Int = 60 # 0=unlimited
+    background::RGBA{N0f8} = Raylib.WHITE  # cleared at the start of every drawing frame
 end
 
 mutable struct Clock                     # changes every frame

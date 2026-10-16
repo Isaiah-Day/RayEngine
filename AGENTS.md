@@ -102,13 +102,16 @@ Don't put per-entity data in Observables, and don't use Observables for anything
      Each step runs `fixed_update`, then `apply!` commands, then clears the `fixed_pressed` latch.
    - if not paused: `update`, `apply!` commands, advance `clock.elapsed`
    - paused + `step!` runs exactly one fixed step, then `update` with `dt = fixed_dt`
-3. `Raylib.BeginDrawing`, then `render!`: `render`, `overlay`, and the debug overlay if
+3. `Raylib.BeginDrawing`, then `Raylib.ClearBackground(cfg.background)` (the back buffer is
+   undefined after a swap, so every frame starts from a known color), then `render!`:
+   `render`, `overlay`, and the debug overlay if
    `params.show_debug[]`, then `Raylib.EndDrawing` (always, via `try/finally`).
 
 Stage order: `input, fixed_update, update, render, overlay`. There is no `late_update`.
 
 `simulate!` makes no Raylib calls, so tests and replays drive the engine headless. For windowed
 frames, `frame!` polls input then calls `simulate!`; in tests, input is faked with `press!`.
+`EngineConfig.background` sets the per-frame clear color.
 
 ### Systems
 - A system is a plain function `f(eng::Engine, dt::Float64)`, reaching everything through `eng`
