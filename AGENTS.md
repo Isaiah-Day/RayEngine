@@ -5,7 +5,7 @@ engine is the module `RayEngine` in `src/`. Game code is supposed to live in a s
 package; `example/` is a sample game that is currently **out of sync with the engine** and
 does not load (see Known issues).
 
-> Note: engine recovered from the stage refactor; test suite is **green** (177 assertions, `Pkg.test()`).
+> Note: engine recovered from the stage refactor; test suite is **green** (201 assertions, `Pkg.test()`).
 > See Known issues for the remaining gaps.
 
 ## Project layout
@@ -26,9 +26,9 @@ src/
   debug/dev.jl      listen!/unlisten!/unlisten_all!, pause!/resume!/step!, enable!/disable!, systems, inspect, snapshot!/restore!
   debug/overlay.jl  Debug HUD: overlay_lines, draw_overlay! (toggled by params.show_debug)
   visual/           Drawables Rect, Circle, Line, Pixel, LinearSpline, BezierSpline,
-                    Ellipse, Triangle + draw(); Style/Theme; Shader placeholder
-                    (see Known issues)
-test/runtests.jl    Headless suite — GREEN (177 assertions). Covers ECS, CommandBuffer, Resources,
+                    Ellipse, Triangle + draw(); Style/Theme; theme.jl holds the Shader
+                    data type, shader.jl the GL backend (see Visual drawing)
+test/runtests.jl    Headless suite — GREEN (201 assertions). Covers ECS, CommandBuffer, Resources,
                     InputState, Bus/listen!, Engine (simulate!, pause/step, fixed-input latch,
                     fault isolation, commands-between-stages, render! headless, default ctor),
                     scenes/resets, snapshots, visual shapes. Fixtures: TPos/TVel/TTag,
@@ -71,7 +71,7 @@ Use the `mcp__julia_mcp` namespace proxy: `mcp__julia_mcp({ tool: "julia_eval", 
 ```julia
 using RayEngine            # loads Raylib too, but opens no window
 
-using Pkg; Pkg.test()      # full suite — green (177 assertions)
+using Pkg; Pkg.test()      # full suite — green (201 assertions)
 
 eng = Engine(TParams(), TState();   # headless engine; fixtures in test/runtests.jl
              config = EngineConfig(fixed_dt = 1/60),
@@ -167,7 +167,7 @@ includes it in `snapshot!`. Resources survive `reset_scene!`.
 
 ### Visual drawing
 `src/visual/` is a small 2D shaping layer over Raylib, included by `RayEngine.jl`
-(`theme.jl` → `objects.jl` → `draw.jl`).
+(`theme.jl` → `objects.jl` → `shader.jl` → `draw.jl`).
 - Drawables: `Rect(pos1, pos2)`, `Circle(center, r)`, `Line(x1,y1,x2,y2,w)` / `Line(p1,p2,w)`,
   `Pixel(x, y)`, `LinearSpline([[x,y], ...], width=1.0)`, `BezierSpline(p1, p2, w)`,
   `Ellipse(center, radius_h, radius_v)`, `Triangle(v1, v2, v3)` (6-coordinate forms too);
@@ -176,10 +176,30 @@ includes it in `snapshot!`. Resources survive `reset_scene!`.
   takes `Ref{<:StaticArray}`, so a `Vector{RayVector2}` won't dispatch). `Pixel`, `LinearSpline`
   and `BezierSpline` have no raylib outline variant; a non-`nothing` `stroke` is ignored with
   a `@warn` (same as `Line`). `Ellipse` and `Triangle` stroke via `DrawEllipseLines`/`DrawTriangleLines`.
-- `Style`/`Theme` hold a Colors.jl `Color`, `alpha`, optional `stroke`/`strokewidth`.
+- `Style`/`Theme` hold a Colors.jl `Color`, `alpha`, optional `stroke`/`strokewidth`, and an
+  optional `shader::Union{Shader,Nothing}`. Objects hold a `style::Style` (not a union), so the
+  plain-color path is always available.
 - `draw(obj)` emits the Raylib draw calls and needs an active window (not callable headless).
 - The types are exported but not wired into a dedicated stage; games call `draw` from a
   `:render`/`:overlay` system.
+
+#### Shaders
+- `Shader(frag; vert="", is_path=false, kwargs...)` in `theme.jl` is **plain data** (source,
+  uniforms, a lazily-filled `handle`). Constructing one makes no Raylib calls, so it is safe on
+  the headless data path. `file_shader(path)` loads from a `.fs` file and re-reads it when the
+  mtime changes; `set_uniform!`/`set_source!` mutate it.
+- `shader.jl` is the only file that touches GL. `draw(::Rect)` calls `with_shader(sh; size)`,
+  which compiles on first use, uploads built-ins (`u_time`, `u_size`) plus user uniforms, wraps
+  `f()` in `BeginShaderMode`/`EndShaderMode` (in a `finally`), and is the shader path for now.
+- A shaded `Rect` is drawn as a 1x1 white texture stretched over the rect (`DrawTexturePro`), so
+  `fragTexCoord` runs 0..1. raylib's own shape calls sample a sliver of its white texture, which
+  is why they are not used here.
+- `Style.shader` is only honoured by `Rect`; other shapes warn once and draw the plain colour.
+- Compiling must happen on the window thread. `unload_all_shaders!()` runs in `start!`'s `finally`
+  just before `CloseWindow`; shader finalizers are intentionally not used.
+- raylib 4.0's bindings declare `const void *` as `Ref{Nothing}`; `ShaderValueRef <: Ref{Nothing}`
+  in `shader.jl` is the adapter that lets `SetShaderValue` see any buffer.
+- raylib 4.0 has no `IsShaderReady`: a compile failure silently falls back to the default shader.
 
 ### Bus and listeners
 - `emit!(bus, event)` notifies synchronously, in registration order, on the game thread.
@@ -212,3 +232,10 @@ restart: snapshot, restart Julia, restore.
 
 1. **`test/runtests.jl` needs `Test` in `[extras]`/`[targets]`** — already done; run
    `Pkg.resolve()` after touching deps so Pkg stops warning about a stale manifest.
+2. **Shaders are Rect-only.** `Circle`/`Ellipse`/`Triangle` would need a bounding-box quad plus
+   a `discard` in GLSL; `Line`/splines/`Text`/`Pixel` don't fit the UV model. All of them warn
+   once and fall back to `Style.color`.
+3. **A shader compile error cannot be detected.** raylib 4.0 lacks `IsShaderReady`; it logs to
+   stderr and draws with the default shader. `compile!` only guards against a zero program id.
+4. **`start!` is the only path that unloads shaders.** Driving `frame!` by hand (e.g. in a test
+   window harness) leaves handles alive until `unload_all_shaders!` is called manually.

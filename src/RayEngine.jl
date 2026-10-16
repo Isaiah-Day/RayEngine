@@ -26,6 +26,7 @@ Vec = Array{Int, 1}
 
 include("visual/theme.jl")
 include("visual/objects.jl")
+include("visual/shader.jl")
 include("visual/draw.jl")
 include("ecs.jl")
 include("commands.jl")
@@ -74,5 +75,6 @@ export start!, stop!, pause!, resume!, step!, enable!, disable!, systems
 export start!, stop!, pause!, resume!, step!, enable!, disable!, systems
 export reset_scene!, load_scene!, goto_scene!
 export inspect, snapshot!, restore!
-export Rect, Circle, Ellipse, Triangle, Pixel, Line, BezierSpline, LinearSpline, Style, Theme, draw, getPos
+export Rect, Circle, Ellipse, Triangle, Pixel, Line, BezierSpline, LinearSpline, Style, Theme, Shader, draw, getPos
+export set_uniform!, set_source!, file_shader, with_shader, unload_all_shaders!
 end # module

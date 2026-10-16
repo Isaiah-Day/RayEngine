@@ -5,7 +5,7 @@ mutable struct Rect <: Object
     pos1::Vec
     pos2::Vec
 
-    style::Union{Shader,Style}
+    style::Style
 
     Rect(pos1::Vec, pos2::Vec) = new(pos1, pos2, Style())
 end
@@ -18,7 +18,7 @@ mutable struct Line <: Object
 
     width::Float32
 
-    style::Union{Shader,Style}
+    style::Style
 
     Line(x1, y1, x2, y2, strokewidth) = new([x1, y1], [x2, y2], Float32(strokewidth), Style())
     Line(p1, p2, width) = new(p1, p2, Float32(width), Style())
@@ -31,7 +31,7 @@ end
     center::Vec
     radius::Float32
 
-    style::Union{Shader,Style}=Style()
+    style::Style=Style()
 
     Circle(center::Vec, r::Real) = new(center, Float32(r), Style())
 end
@@ -42,16 +42,16 @@ end
     pos::Vec
     size::Int
 
-    style::Union{Shader, Style}=Style()
+    style::Style=Style()
 
     Text(text::String, pos::Vec, size::Int) = new(text, pos, size, Style())
 end
 
 
-mutable struct Pixel <: Object
+@kwdef mutable struct Pixel <: Object
     pos::Vec
 
-    style::Union{Shader,Style}
+    style::Style
 
     Pixel(pos::Vec) = new(pos, Style())
     Pixel(x::Integer, y::Integer) = new([x, y], Style())
@@ -62,7 +62,7 @@ mutable struct LinearSpline <: Object
     points::Vector{Vec}
     width::Float32
 
-    style::Union{Shader,Style}
+    style::Style
 
     LinearSpline(points::Vector{Vec}, width=1.0) = new(points, Float32(width), Style())
 end
@@ -74,7 +74,7 @@ mutable struct BezierSpline <: Object
 
     width::Float32
 
-    style::Union{Shader,Style}
+    style::Style
 
     BezierSpline(x1, y1, x2, y2, strokewidth) = new([x1, y1], [x2, y2], Float32(strokewidth), Style())
     BezierSpline(p1::Vec, p2::Vec, width) = new(p1, p2, Float32(width), Style())
@@ -86,7 +86,7 @@ mutable struct Ellipse <: Object
     radius_h::Float32
     radius_v::Float32
 
-    style::Union{Shader,Style}
+    style::Style
 
     Ellipse(center::Vec, radius_h::Real, radius_v::Real) = new(center, Float32(radius_h), Float32(radius_v), Style())
 end
@@ -97,7 +97,7 @@ mutable struct Triangle <: Object
     v2::Vec
     v3::Vec
 
-    style::Union{Shader,Style}
+    style::Style
 
     Triangle(v1::Vec, v2::Vec, v3::Vec) = new(v1, v2, v3, Style())
     Triangle(x1, y1, x2, y2, x3, y3) = new([x1, y1], [x2, y2], [x3, y3], Style())

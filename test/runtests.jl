@@ -578,4 +578,62 @@ end
     @test Style(color = colorant"red", alpha = 0.5) isa Style
 end
 
+@testset "Shaders (headless data path)" begin
+    sh = Shader("void main() { finalColor = vec4(1.0); }")
+    @test sh isa Shader
+    @test !sh.is_path
+    @test isnothing(sh.handle)          # not compiled until first draw
+    @test isempty(sh.uniforms)
+
+    set_uniform!(sh, :u_scale, 2.0)
+    set_uniform!(sh, :u_offset, (0.1f0, 0.2f0))
+    set_uniform!(sh, :u_color, colorant"red")
+    @test sh.uniforms[:u_scale] == 2.0
+
+    set_uniform!(sh, :u_b => 1.0, :u_c => 2.0)
+    @test sh.uniforms[:u_b] == 1.0 && sh.uniforms[:u_c] == 2.0
+
+    # type mapping
+    @test RayEngine.shader_uniform_data(1.5) ==
+          (Cint(Raylib.SHADER_UNIFORM_FLOAT), 1.5f0)
+    @test RayEngine.shader_uniform_data(3) ==
+          (Cint(Raylib.SHADER_UNIFORM_INT), Cint(3))
+    @test RayEngine.shader_uniform_data((1.0f0, 2.0f0)) ==
+          (Cint(Raylib.SHADER_UNIFORM_VEC2), (1.0f0, 2.0f0))
+    @test RayEngine.shader_uniform_data((1, 2, 3)) ==
+          (Cint(Raylib.SHADER_UNIFORM_IVEC3), (Cint(1), Cint(2), Cint(3)))
+    @test_throws ErrorException RayEngine.shader_uniform_data((1, 2, 3, 4, 5))
+
+    # colors become a normalized vec4
+    utype, payload = RayEngine.shader_uniform_data(colorant"red")
+    @test utype == Cint(Raylib.SHADER_UNIFORM_VEC4)
+    @test payload == (1.0f0, 0.0f0, 0.0f0, 1.0f0)
+
+    # #version is supplied when the source omits it
+    @test RayEngine._with_version("x") == "#version 330\nx"
+    @test RayEngine._with_version("#version 150\nx") == "#version 150\nx"
+
+    # a Style can carry a shader, and Rect uses Style.shader
+    st = Style(shader = sh)
+    @test st.shader === sh
+    r = Rect([0, 0], [10, 4])
+    r.style = st
+    @test r.style.shader === sh
+    @test isnothing(Circle([0, 0], 1.0).style.shader)
+
+    # source edits bump the version so the next draw recompiles
+    v0 = sh.version
+    set_source!(sh, "void main() {}")
+    @test sh.version == v0 + 1
+
+    # path shaders are supported and validate on draw, not construction
+    fsh = file_shader("frag.fs")
+    @test fsh.is_path && fsh.frag == "frag.fs"
+    @test isnothing(fsh.handle)
+
+    @test hasmethod(draw, Tuple{Rect})
+    @test isdefined(RayEngine, :with_shader)
+    @test isdefined(RayEngine, :unload_all_shaders!)
+end
+
 end # @testset "RayEngine"

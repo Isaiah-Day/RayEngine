@@ -42,6 +42,11 @@ function start!(eng::Engine)
             # sleep(pause)
         end
     finally
+        try
+            unload_all_shaders!()   # GL objects must go before the context dies
+        catch err
+            @warn "failed to unload shaders" exception = (err, catch_backtrace())
+        end
         Raylib.CloseWindow()
         eng.state.status[] = :stopped
         eng.dev.task = nothing
