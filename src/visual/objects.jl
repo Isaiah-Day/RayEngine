@@ -6,11 +6,9 @@ mutable struct Rect <: Object
     pos2::Vec
 
     style::Style
-
-    Rect(pos1::Vec, pos2::Vec) = new(pos1, pos2, Style())
 end
 
-
+Rect(pos1::Vec, pos2::Vec) = Rect(pos1, pos2, Style())
 
 mutable struct Line <: Object
     pos1::Vec
@@ -19,43 +17,43 @@ mutable struct Line <: Object
     width::Float32
 
     style::Style
-
-    Line(x1, y1, x2, y2, strokewidth) = new([x1, y1], [x2, y2], Float32(strokewidth), Style())
-    Line(p1, p2, width) = new(p1, p2, Float32(width), Style())
-
 end
 
+Line(x1::Int, y1::Int, x2::Int, y2::Int, strokewidth) = Line([x1, y1], [x2, y2], Float32(strokewidth), Style())
+Line(p1::Vec, p2::Vec, width) = Line(p1, p2, Float32(width), Style())
 
 
-@kwdef mutable struct Circle <: Object
+mutable struct Circle <: Object
     center::Vec
     radius::Float32
 
-    style::Style=Style()
-
-    Circle(center::Vec, r::Real) = new(center, Float32(r), Style())
+    style::Style
 end
 
+Circle(center::Vec, r) = Circle(center, Float32(r), Style())
 
-@kwdef mutable struct Text <: Object
+
+
+mutable struct Text <: Object
     text::String
     pos::Vec
     size::Int
 
-    style::Style=Style()
-
-    Text(text::String, pos::Vec, size::Int) = new(text, pos, size, Style())
+    style::Style
 end
 
+Text(text::String, pos::Vec, size::Int) = Text(text, pos, size, Style())
 
-@kwdef mutable struct Pixel <: Object
+
+
+mutable struct Pixel <: Object
     pos::Vec
 
     style::Style
-
-    Pixel(pos::Vec) = new(pos, Style())
-    Pixel(x::Integer, y::Integer) = new([x, y], Style())
 end
+
+Pixel(pos::Vec) = Pixel(pos, Style())
+Pixel(x::Integer, y::Integer) = Pixel([x, y], Style())
 
 
 mutable struct LinearSpline <: Object
@@ -63,9 +61,10 @@ mutable struct LinearSpline <: Object
     width::Float32
 
     style::Style
-
-    LinearSpline(points::Vector{Vec}, width=1.0) = new(points, Float32(width), Style())
 end
+
+LinearSpline(points::Vector{Vec}, width=1.0) = LinearSpline(points, Float32(width), Style())
+
 
 
 mutable struct BezierSpline <: Object
@@ -75,10 +74,10 @@ mutable struct BezierSpline <: Object
     width::Float32
 
     style::Style
-
-    BezierSpline(x1, y1, x2, y2, strokewidth) = new([x1, y1], [x2, y2], Float32(strokewidth), Style())
-    BezierSpline(p1::Vec, p2::Vec, width) = new(p1, p2, Float32(width), Style())
 end
+
+BezierSpline(x1, y1, x2, y2, strokewidth) = BezierSpline([x1, y1], [x2, y2], Float32(strokewidth), Style())
+BezierSpline(p1::Vec, p2::Vec, width) = BezierSpline(p1, p2, Float32(width), Style())
 
 
 mutable struct Ellipse <: Object
@@ -87,9 +86,9 @@ mutable struct Ellipse <: Object
     radius_v::Float32
 
     style::Style
-
-    Ellipse(center::Vec, radius_h::Real, radius_v::Real) = new(center, Float32(radius_h), Float32(radius_v), Style())
 end
+
+Ellipse(center::Vec, radius_h::Real, radius_v::Real) = Ellipse(center, Float32(radius_h), Float32(radius_v), Style())
 
 
 mutable struct Triangle <: Object
@@ -98,10 +97,11 @@ mutable struct Triangle <: Object
     v3::Vec
 
     style::Style
-
-    Triangle(v1::Vec, v2::Vec, v3::Vec) = new(v1, v2, v3, Style())
-    Triangle(x1, y1, x2, y2, x3, y3) = new([x1, y1], [x2, y2], [x3, y3], Style())
 end
+
+Triangle(v1::Vec, v2::Vec, v3::Vec) = Triangle(v1, v2, v3, Style())
+Triangle(x1, y1, x2, y2, x3, y3) = Triangle([x1, y1], [x2, y2], [x3, y3], Style())
+
 
 
 getPos(::Val{:left}, r::Rect) = min(r.pos1[1], r.pos2[1])
@@ -134,7 +134,7 @@ getPos(::Val{:right}, s::LinearSpline) = maximum(p -> p[1], s.points)
 getPos(::Val{:down}, s::LinearSpline) = minimum(p -> p[2], s.points)
 getPos(::Val{:up}, s::LinearSpline) = maximum(p -> p[2], s.points)
 
-# BezierSpline: bounding edges of the two endpoints (raylib's in-out bézier stays between them).
+# BezierSpline: bounding edges of the two endpoints
 getPos(::Val{:left}, b::BezierSpline) = min(b.pos1[1], b.pos2[1])
 getPos(::Val{:right}, b::BezierSpline) = max(b.pos1[1], b.pos2[1])
 getPos(::Val{:down}, b::BezierSpline) = min(b.pos1[2], b.pos2[2])
