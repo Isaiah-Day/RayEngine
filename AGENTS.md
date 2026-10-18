@@ -1,9 +1,9 @@
 # AGENTS.md — RayEngine
 
 RayEngine is a small ECS game engine for Julia, built on Raylib.jl and Observables.jl. The
-engine is the module `RayEngine` in `src/`. Game code is supposed to live in a separate
-package; `example/` is a sample game that is currently **out of sync with the engine** and
-does not load (see Known issues).
+engine is the module `RayEngine` in `src/`. Game code lives in a separate package;
+`example/` is `WeirdForce`, a playable one-screen prototype (**Chromatic Drift**) with
+its own headless test suite (`Pkg.test()` inside `example/`).
 
 > Note: engine recovered from the stage refactor; test suite is **green** (201 assertions, `Pkg.test()`).
 > See Known issues for the remaining gaps.
@@ -33,7 +33,14 @@ test/runtests.jl    Headless suite — GREEN (201 assertions). Covers ECS, Comma
                     fault isolation, commands-between-stages, render! headless, default ctor),
                     scenes/resets, snapshots, visual shapes. Fixtures: TPos/TVel/TTag,
                     TCounter/TRes resources, make_engine() stage wrapper
-example/            Sample game package MyGame — stale, no longer loadable (old API)
+example/            WeirdForce — Chromatic Drift prototype. `background.fs` paints a force
+                    field; `src/map.jl` is its allocation-free CPU port (same formula,
+                    held snapshot time via `u_shift`) and turns sampled RGB into
+                    acceleration (R→left, G→right, B→up). Systems drive a player from
+                    beacon to beacon and jump the field to a new snapshot every few
+                    seconds; the force arrows, deadline bar and `test/runtests.jl` live
+                    here. Run with `include("activate.jl")` (or
+                    `WeirdForce.run!(headless=true)`).
 ```
 
 
