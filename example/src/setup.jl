@@ -14,11 +14,11 @@ Base.@kwdef mutable struct GameParams
     player_h::Float64 = 52.0
     spawn::Vector{Float64} = [200.0, 500.0]
 
+
+    weirdforce::Vector{Float64} = [100, 100]
+
     colors = Dict{Symbol,Color}(
-        :background => colorant"#2b2d42",
         :player    => colorant"#ef476f",
-        :ground    => colorant"#457b9d",
-        :platform  => colorant"#f4a261",
     )
 end
 
@@ -39,19 +39,9 @@ mutable struct PlayerBody
     pos::Vector{Float64}     # top-left corner
     vel::Vector{Float64}
     size::Vector{Float64}
-    on_ground::Bool
     facing::Float64
 end
 
-mutable struct Platform
-    pos::Vector{Float64}     # top-left corner
-    size::Vector{Float64}
-    solid::Bool
-end
-
-
-mutable struct Writing
-    text::String
-    pos::Vector{Float64}
-    size::Int
+mutable struct Background
+    shader::Style
 end
