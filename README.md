@@ -1,15 +1,11 @@
 # RayEngine: a Julia game engine
 
-RayEngine is a game engine written in Julia, using the raylib library for display.
+This repo is my attempt at making a game engine in the Julia language. This scene is very sparsely populated (I would estimate that there's less than 15 public attempts at a game engine) for a few reasons, the three most prominent being GC, distribution, and gaps in infastructure (which I guess this project is attempting to fix).
 
-Running the example:
-1. Install Julia
-2. `git clone https://github.com/Isaiah-Day/RayEngine`
-3. `julia --project=example example/src/run.jl`
-4. Enjoy!
+To make the project feasable, I did use Raylib.jl (bindings for the C library raylib) for graphics. There are no other major dependencies. I coded an ECS (see src/ecs.jl) as the storage.
 
-Or, on Mac:
-1. Go to github.com/Isaiah-Day/RayEngine/releases/tag/example-game
-2. Download and unzip
-3. Inside `PlatformerBuild/`: `./bin/Platformer`
-4. Mac will probably give a security warning because this isn't a verified app. Go to Settings -> Privacy & Security to fix it.
+Docs are coming soon. For now, look at the example.
+
+
+
+For instructions on running examples go to a specific release.
