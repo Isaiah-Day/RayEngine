@@ -59,7 +59,7 @@ function run!(; headless::Bool = false, frames::Int = 120)
     eng = RayEngine.Engine(
         p, s;
         config = RayEngine.EngineConfig(
-            title = "WeirdForce: Chromatic Drift",
+            title = "Color Drift",
             width = 1280,
             height = 720,
             fixed_dt = 1 / 60,
